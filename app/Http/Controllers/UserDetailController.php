@@ -101,7 +101,7 @@ class UserDetailController extends Controller
     public function store(Request $request)
     {
         try {
-            // Validation
+            
             $validator = Validator::make($request->all(), [
                 'profile_image' => 'required|image|mimes:jpg|max:2048',
                 'name' => 'required|string|max:25',
@@ -113,8 +113,9 @@ class UserDetailController extends Controller
                 'country' => 'required',
             ]);
     
-            // If validation fails, return with errors
+            
             if ($validator->fails()) {
+                
                 
                 return redirect()->back()->withErrors($validator)->withInput();
             }
@@ -228,11 +229,92 @@ public function downloadCSV()
 
     $callback = function () use ($columns) {
         $file = fopen('php://output', 'w');
-        fputcsv($file, $columns); // Insert headers
+        fputcsv($file, $columns); 
         fclose($file);
     };
 
     return response()->stream($callback, 200, $headers);
+}
+
+
+
+
+public function edit($id)
+{
+    $user = UserDetail::findOrFail($id);
+    return view('update', compact('user'));
+}
+
+
+public function update(Request $request, $id)
+{
+    try {
+       
+        $user = UserDetail::findOrFail($id);
+
+       
+        $validator = Validator::make($request->all(), [
+            'profile_image' => 'nullable|image|mimes:jpg|max:2048',
+            'name' => 'required|string|max:25',
+            'phone' => 'required',
+            'email' => 'required|email|unique:user_details,email,' . $id, 
+            'street_address' => 'required|string',
+            'city' => 'required|string',
+            'state' => 'required',
+            'country' => 'required',
+        ]);
+
+       
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        
+        $validated = $validator->validated();
+
+       
+        if ($request->hasFile('profile_image')) {
+            $file = $request->file('profile_image');
+
+            if ($file->isValid()) {
+                $filename = time() . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('uploads'), $filename);
+
+               
+                if ($user->profile_image && file_exists(public_path('uploads/' . $user->profile_image))) {
+                    unlink(public_path('uploads/' . $user->profile_image));
+                }
+
+                $validated['profile_image'] = $filename;
+            } else {
+                return redirect()->back()->with('error', 'Invalid image file.');
+            }
+        }
+
+    
+        $user->update($validated);
+
+       
+        return redirect()->route('home')->with('success', 'User updated successfully');
+    
+    } catch (Exception $e) {
+        return redirect()->back()->with('error', 'Something went wrong! ' . $e->getMessage());
+    }
+}
+
+
+// Destroy user
+public function destroy($id)
+{
+    $user = UserDetail::findOrFail($id);
+
+    if ($user->profile_image && \Storage::exists('public/' . $user->profile_image)) {
+        \Storage::delete('public/' . $user->profile_image);
+    }
+
+    $user->delete();
+
+    return redirect()->route('home')->with('success', 'User deleted successfully.');
 }
 
 }

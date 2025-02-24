@@ -27,7 +27,7 @@
             <div class="alert alert-success">{{ session('success') }}</div>
         @endif
 
-        {{-- Responsive Table --}}
+        
         <div class="table-responsive">
             <table class="table table-bordered table-hover">
                 <thead class="table-dark text-center">
@@ -40,6 +40,7 @@
                         <th>City</th>
                         <th>State</th>
                         <th>Country</th>
+                        <th>Actions</th> 
                     </tr>
                 </thead>
                 <tbody>
@@ -55,10 +56,22 @@
                             <td>{{ $user->city }}</td>
                             <td>{{ $user->state }}</td>
                             <td>{{ $user->country }}</td>
+                            <td class="text-center">
+                                <!-- Edit Button -->
+                                <a href="{{ route('edit', $user->id) }}" class="btn btn-warning btn-sm">Edit</a>
+        
+                                <!-- Delete Button (with confirmation) -->
+                                <form action="{{ route('destroy', $user->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this user?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                </form>
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>
             </table>
         </div>
+        
     </div>
 @endsection
