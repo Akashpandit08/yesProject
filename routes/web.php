@@ -24,9 +24,14 @@ Route::get('/', [UserDetailController::class, 'index'])->name('home');
 Route::get('/create', [UserDetailController::class, 'create'])->name('create');
 Route::post('/store', [UserDetailController::class, 'store'])->name('store');
 Route::get('/export-csv', [UserDetailController::class, 'exportCSV'])->name('export.csv');
+Route::post('/users/import', [UserDetailController::class, 'importCSV'])->name('users.import');
+Route::get('/users/download-csv', [UserController::class, 'downloadCSV'])->name('users.download');
+
+
 
 
 
 Route::get('/get-countries', [UserDetailController::class, 'getCountries'])->name('get.countries');
 Route::get('/get-states/{country}', [UserDetailController::class, 'getStates'])->name('get.states');
+
 

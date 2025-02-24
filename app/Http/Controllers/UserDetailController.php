@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
+use League\Csv\Writer;
+use League\Csv\Reader;
 
 
 use Exception;
@@ -81,23 +85,6 @@ class UserDetailController extends Controller
 
 
     
-    private function getCountryId($countryCode)
-    {
-        $countries = [
-            "US" => 6252001, // United States
-            "IN" => 1269750, // India
-            "CA" => 6251999, // Canada
-            "AU" => 2077456, // Australia
-            "GB" => 2635167, // United Kingdom
-            "FR" => 3017382, // France
-            "DE" => 2921044, // Germany
-            "BR" => 3469034, // Brazil
-            "ZA" => 953987,  // South Africa
-            "MX" => 3996063, // Mexico
-        ];
-    
-        return $countries[$countryCode] ?? null;
-    }
     
     public function index()
     {
@@ -198,6 +185,56 @@ class UserDetailController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+    public function importCSV(Request $request)
+{
+    $request->validate([
+        'csv_file' => 'required|mimes:csv,txt|max:2048',
+    ]);
+
+    // Read CSV file
+    $file = $request->file('csv_file');
+    $reader = Reader::createFromPath($file->getPathname(), 'r');
+    $reader->setHeaderOffset(0);
+    $records = iterator_to_array($reader->getRecords()); // Convert to array
+
+    if (empty($records)) {
+        return back()->with('error', 'CSV file is empty or headers are incorrect.');
+    }
+
+    // Insert data into the database
+    foreach ($records as $record) {
+        UserDetail::create([
+            'name' => $record['Name'] ?? '',
+            'phone' => $record['Phone'] ?? '',
+            'email' => $record['Email'] ?? '',
+            'street_address' => $record['Street Address'] ?? '',
+            'city' => $record['City'] ?? '',
+            'state' => $record['State'] ?? '',
+            'country' => $record['Country'] ?? '',
+        ]);
+    }
+
+    return back()->with('success', 'CSV Imported Successfully.');
+}
+
+public function downloadCSV()
+{
+    $headers = [
+        'Content-Type' => 'text/csv',
+        'Content-Disposition' => 'attachment; filename="sample_template.csv"',
+    ];
+
+    $columns = ['Name', 'Phone', 'Email', 'Street Address', 'City', 'State', 'Country'];
+
+    $callback = function () use ($columns) {
+        $file = fopen('php://output', 'w');
+        fputcsv($file, $columns); // Insert headers
+        fclose($file);
+    };
+
+    return response()->stream($callback, 200, $headers);
+}
+
 }
 
 
